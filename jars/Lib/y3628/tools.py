@@ -3,6 +3,7 @@
 
 # Imports
 #       y3628
+import sjlogging
 from helpers import fileHandler
 #		Bio-Formats
 from loci.plugins import BF
@@ -16,16 +17,18 @@ from ij.plugin import ChannelSplitter
 from ij.gui import GenericDialog
 from java.awt.event import ActionListener
 
+sjlog = sjlogging.SJLogger("punctaTracker:tools")
+
 class ChannelExtract_listen(ActionListener):
 	extractTitle = "Extracted channel image"
 	def actionPerformed(this, event):
-		print "Performing channel extract tool"
+		sjlog.info("Performing channel extract tool")
 		IJ.showStatus("Select INPUT File Folder")
 		dc_i = DirectoryChooser("Select INPUT File Folder")
-		print dc_i.getDirectory()
+		sjlog.info(dc_i.getDirectory())
 		fH = fileHandler()
 		file_list = fH.getFileList(dc_i.getDirectory())
-		print file_list
+		sjlog.info(file_list)
 		IJ.showStatus("Select OUTPUT File Folder")
 		dc_o = DirectoryChooser("Select OUTPUT File Folder")
 		chSet = 0

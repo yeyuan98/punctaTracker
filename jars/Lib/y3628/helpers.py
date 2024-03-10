@@ -1,6 +1,8 @@
 # Static helpers
 
 # Imports
+#		y3628
+import sjlogging
 #		ImageJ
 from ij import WindowManager
 from ij.plugin.frame import RoiManager
@@ -10,6 +12,7 @@ import os, json
 if os.name == 'nt':
 	import win32api, win32con
 
+sjlog = sjlogging.SJLogger("punctaTracker:helpers")
 
 #	Key binding propagation
 def virus_propagation(listener):
@@ -42,7 +45,7 @@ class fileHandler:
 		li.sort()
 		for i in xrange(0,len(li)):
 			li[i] = str(li[i])
-		print "Current folders after sorting: " + json.dumps(li)
+		sjlog.info("Current folders after sorting: " + json.dumps(li))
 		if len(li) == 0:
 			return 1
 		else:
@@ -50,7 +53,7 @@ class fileHandler:
 	def checkExistenceAndCreate(this, path, dir_name):
 		if not dir_name in os.listdir(path):
 			os.mkdir(os.path.join(path,dir_name))
-		print "Checked folder name="+ dir_name + ", under path="+ path
+		sjlog.info("Checked folder name="+ dir_name + ", under path="+ path)
 
 # ROI saver
 class roiSaver:
@@ -83,7 +86,7 @@ class roiSaver:
 	def save(this):
 		#saves all ROIs using Roimanager.
 		roiFileName = "roiSet.zip"
-		print "total ROI count = " + str(RoiManager.getInstance().getCount())
+		sjlog.info("total ROI count = " + str(RoiManager.getInstance().getCount()))
 		path = os.path.join(this.temp_folder,this.time_point,str(this.measurementN),roiFileName)
 		RoiManager.getInstance().runCommand("Save",path)
 	def saveImage(this,imp):

@@ -9,6 +9,16 @@
 #	https://downloads.openmicroscopy.org/bio-formats/6.2.1/api/loci/plugins/BF.html
 #to merge different channels, use merge channels WITH make composite selected. otherwise will get RGB and lose data.
 
+# Setup Scijava logging
+# SciJava parameter annotation, to fetch LogService as object sjlogservice
+#	Parameter annotation
+#	
+#	Use the Logger interface
+#	https://javadoc.scijava.org/SciJava/org/scijava/log/Logger.html
+from y3628 import sjlogging
+#@ LogService sjlogservice
+sjlogging.init(sjlogservice)
+
 # Imports
 #		Bio-Formats
 from loci.plugins import BF
@@ -28,14 +38,18 @@ import os, json
 #		y3628 components
 from y3628 import *
 
+logMainMenu = sjlogging.SJLogger("punctaTracker:main")
+logKeybinding = sjlogging.SJLogger("punctaTracker:keybinding")
 
+
+# Global parameter
 ROIsave_jf = 0 #this controls one-time activation of save and quit event for imageplus
 
 #----------------------Key Binding Helpers--------------------------------
 #   Keybinding dispatcher for a single ImagePlus
 def response_dispatcher(imp, keyEvent):
 	global ROIsave_jf
-	print "clicked keyCode " + str(keyEvent.getKeyCode()) + " on image " + str(imp)
+	logKeybinding.info("clicked keyCode " + str(keyEvent.getKeyCode()) + " on image " + str(imp))
 	if str(keyEvent.getKeyCode()) == "32":
 		#space key for contrast setting
 		currLUTs = imp.getLuts()
@@ -63,13 +77,13 @@ def response_dispatcher(imp, keyEvent):
 		#Behavior: save ROI files into the temporary folder and then close all the images
 		ROIsave_jf = 1
 		RS = helpers.roiSaver(bListeners[1].time_point,bListeners[4].temp_folder_path)
-		print "updating ROIdata folder"
+		logKeybinding.info("updating ROIdata folder")
 		RS.check()
-		print "saving ROI"
+		logKeybinding.info("saving ROI")
 		RS.save()
-		print "saving measurement channel source image"
+		logKeybinding.info("saving measurement channel source image")
 		RS.saveImage(imp)
-		print "closing up current measurement"
+		logKeybinding.info("closing up current measurement")
 		RS.close()
 		
 class ListenToKey(KeyAdapter):
@@ -87,7 +101,7 @@ class ListenToKey(KeyAdapter):
 class CZIOpen_listen(ActionListener):
 	imp = None
 	def actionPerformed(this, event):
-		print "CZI Open clicked"
+		logMainMenu.info("CZI Open clicked")
 		od = OpenDialog("Choose CZI File")
 		file_path = od.getPath()
 		importops = ImporterOptions()
@@ -108,7 +122,7 @@ class Measure_listen(ActionListener):
 	listener = None
 	def actionPerformed(this, event):
 		global ROIsave_jf
-		print "Measure clicked"
+		logMainMenu.info("Measure clicked")
 		ROIsave_jf = 0
 		d = GenericDialog("Measurement Settings")
 		d.hideCancelButton()
@@ -121,8 +135,8 @@ class Measure_listen(ActionListener):
 		d.showDialog()
 		chSelection = int(d.getNextRadioButton())
 		this.time_point = d.getNextString()
-		print "Selected channel " + str(chSelection)
-		print "Time point setting " + this.time_point
+		logMainMenu.info("Selected channel " + str(chSelection))
+		logMainMenu.info("Time point setting " + this.time_point)
 		#Then we display a new window with only the selected channel
 		this.channelimp = ChannelSplitter().split(bListeners[0].imp)
 		this.channelimp = this.channelimp[chSelection - 1]
@@ -133,7 +147,7 @@ class Measure_listen(ActionListener):
 		#Then we install key listeners for all images for contrast setting
 		this.listener = ListenToKey()
 		helpers.virus_propagation(this.listener)
-		print "Key binding established"
+		logMainMenu.info("Key binding established")
 
 #Analysis
 #	Listens mainDialog Analysis button action
@@ -143,7 +157,7 @@ class Analysis_listen(ActionListener):
 	def analysis_type(this):
 		return ["Nucleus Periphery Dist", "Puncta CTCF", "Puncta Movement", "Spot in ROI"]
 	def actionPerformed(this, event):
-		print "Analysis clicked"
+		logMainMenu.info("Analysis clicked")
 		fhr = analysisHandlers.measurementHandler(bListeners[4].temp_folder_path)
 		dataSummary = fhr.measurementDataSummary(bListeners[4].temp_folder_path)
 		d = GenericDialog("Analysis File Summary")
@@ -177,7 +191,7 @@ class Tools_listen(ActionListener):
 	def __init__(this):
 		this.layout = GridLayout(1,len(this.bNames))
 	def actionPerformed(this, event):
-		print "Tools clicked"
+		logMainMenu.info("Tools clicked")
 		#IF YOU USE NONBLOCKING, THE PROGRAM WILL HANG.
 		dialog = GenericDialog("Tools")
 		buttons = []
@@ -198,7 +212,7 @@ class About_listen(ActionListener):
 	#Limitation: temp folder path does not support single \
 	temp_folder_path = "/Users/yeyuan/ROIdata"
 	def actionPerformed(this, event):
-		print "About clicked"
+		logMainMenu.info("About clicked")
 		d = GenericDialog("About")
 		d.hideCancelButton()
 		d.addMessage("Version: R3.1 'Mod' \n Author: Ye Yuan (yeyu@umich.edu)")

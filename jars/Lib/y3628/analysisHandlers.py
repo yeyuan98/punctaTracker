@@ -1,6 +1,8 @@
 # Helpers for analysis modules
 
 # Imports
+#       y3628
+import sjlogging
 #		ImageJ
 from ij import IJ
 from ij.plugin.frame import RoiManager
@@ -10,6 +12,8 @@ from collections import OrderedDict
 import os, json
 if os.name == 'nt':
     import win32api, win32con
+
+sjlog = sjlogging.SJLogger("punctaTracker:analysis:handler")
 
 class measurementHandler:
         imgExt = [".tif", ".czi"]
@@ -28,7 +32,7 @@ class measurementHandler:
         def checkExistenceAndCreate(this, path, dir_name):
             if not dir_name in os.listdir(path):
                 os.mkdir(os.path.join(path,dir_name))
-            print "Checked folder name="+ dir_name + ", under path="+ path
+            sjlog.info("Checked folder name="+ dir_name + ", under path="+ path)
         def getCurrMeasurementN(this, temp_folder,time_point):
             li = [f for f in os.listdir(os.path.join(temp_folder,time_point)) if not this.folder_is_hidden(f)]
             for i in xrange(0,len(li)):
@@ -36,7 +40,7 @@ class measurementHandler:
             li.sort()
             for i in xrange(0,len(li)):
                 li[i] = str(li[i])
-            print "Current folders after sorting: " + json.dumps(li)
+            sjlog.info("Current folders after sorting: " + json.dumps(li))
             if len(li) == 0:
                 return 1
             else:
@@ -70,18 +74,17 @@ class measurementHandler:
         def readSingleMeasurement(this,time_point,measurementN):
             #read and load ROIset and also the tif file saved in measurement folder, returns the opened tif imageplus
             #list the files
-            print "Reading measurement..."
+            sjlog.info("Reading measurement...")
             measurement_folder_path = os.path.join(this.temp_folder, time_point, str(measurementN))
-            print "Path = " + measurement_folder_path
+            sjlog.info("Path = " + measurement_folder_path)
             files = this.singleMeasurementList(time_point,measurementN)
-            print files
             for i in xrange(len(files)):
                 files[i] = os.path.join(this.temp_folder, time_point, str(measurementN), files[i])
             imp = IJ.openImage(os.path.join(measurement_folder_path, files[1]))
             rm = RoiManager.getInstance()
             rm.reset()
             rm.runCommand("Open",files[0])
-            print "Roi Count = " + str(len(rm.getRoisAsArray()))
+            sjlog.info("Roi Count = " + str(len(rm.getRoisAsArray())))
             return imp
         def roiSorted(this):
             rm = RoiManager.getInstance()

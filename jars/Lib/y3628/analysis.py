@@ -4,6 +4,7 @@
 
 # Imports
 #       y3628
+import sjlogging
 from analysisHandlers import *
 from helpers import pointDist
 #		ImageJ
@@ -13,6 +14,8 @@ from ij.plugin.frame import RoiManager
 from collections import OrderedDict
 #		Python 2.x
 import csv
+
+sjlog = sjlogging.SJLogger("punctaTracker:analysis")
 
 #Puncta/ROI intensity (CTCF) analysis - original
 #Refactored as part of R3.0
@@ -35,16 +38,16 @@ class roiIntAnalysis:
 		resultSummary = measHandler.measurementDataSummary(resultPath)
 		results = OrderedDict()
 		dR = displayResult(headers)
+		sjlog.info("Running roiIntAnalysis")
 		for tp in resultSummary:
-			print "Processing time point = " + tp
 			results[tp] = OrderedDict()
 			for measurementN in resultSummary[tp]:
 				results[tp][measurementN] = []
-				print "        Processing measurement N = " + str(measurementN)
+				sjlog.info("Processing measurement N = " + str(measurementN))
 				imp = measHandler.readSingleMeasurement(tp,measurementN)
 				roiDict = measHandler.roiSorted()
 				for planeN in roiDict:
-					print "                Processing Z Plane = " + str(planeN)
+					sjlog.info("Processing Z Plane = " + str(planeN))
 					planeNresults = []
 					for roi in roiDict[planeN]:
 						# roiMeas: [plane#, A, M, I]
@@ -57,7 +60,6 @@ class roiIntAnalysis:
 							planeNresults[i][3] - bgd*planeNresults[i][1])
 					planeNresults.pop()
 					results[tp][measurementN].extend(planeNresults)
-				print results[tp][measurementN]
 				dR.saveResult(headers, results[tp][measurementN],tp,measurementN)
 		dR.showResult()
 
@@ -65,6 +67,7 @@ class roiIntAnalysis:
 class nucleusAnalysis:
 	
 	def __init__(this,resultPath):
+		global sjlog
 		headers = ["Distance", "Equivalent Diameter"]
 		rm = RoiManager.getRoiManager()
 		rm.reset()
@@ -72,17 +75,18 @@ class nucleusAnalysis:
 		resultSummary = measHandler.measurementDataSummary(resultPath)
 		results = OrderedDict()
 		dR = displayResult(headers)
+		sjlog.info("Running nucleusAnalysis")
 		for tp in resultSummary:
-			print "Processing time point = " + tp
+			sjlog.info("Processing time point = " + tp)
 			results[tp] = OrderedDict()
 			for measurementN in resultSummary[tp]:
 				results[tp][measurementN] = []
-				print "        Processing measurement N = " + str(measurementN)
+				sjlog.info("Processing measurement N = " + str(measurementN))
 				imp = measHandler.readSingleMeasurement(tp,measurementN)
 				cal = imp.getCalibration()
 				roiDict = measHandler.roiSorted()
 				for planeN in roiDict:
-					print "                Processing Z Plane = " + str(planeN)
+					sjlog.info("Processing Z Plane = " + str(planeN))
 					polygon = roiDict[planeN][0].getInterpolatedPolygon()
 					imp.setSlice(int(planeN))
 					imp.setRoi(roiDict[planeN][0], False)
@@ -135,18 +139,19 @@ class movementAnalysis:
 		resultSummary = measHandler.measurementDataSummary(resultPath)
 		results = OrderedDict()
 		dR = displayResult(headers)
+		sjlog.info("Running movementAnalysis")
 		for tp in resultSummary:
-			print "Processing time point = " + tp
+			sjlog.info("Processing time point = " + tp)
 			results[tp] = OrderedDict()
 			for measurementN in resultSummary[tp]:
 				results[tp][measurementN] = []
-				print "        Processing measurement N = " + str(measurementN)
+				sjlog.info("Processing measurement N = " + str(measurementN))
 				imp = measHandler.readSingleMeasurement(tp,measurementN)
 				cal = imp.getCalibration()
 				fps = 1/cal.frameInterval
 				roiDict = measHandler.roiSorted()
 				for planeN in roiDict:
-					print "                Processing Time plane = " + str(planeN)
+					sjlog.info("Processing Time plane = " + str(planeN))
 					imp.setSlice(int(planeN))
 					
 					if len(roiDict[planeN]) != 1:
@@ -291,18 +296,19 @@ class spotInRoiAnalysis:
 		resultSummary = measHandler.measurementDataSummary(resultPath)
 		results = OrderedDict()
 		dR = displayResult(headers)
+		sjlog.info("Running spotInRoiAnalysis")
 		for tp in resultSummary:
-			print "Processing time point = " + tp
+			sjlog.info("Processing time point = " + tp)
 			results[tp] = OrderedDict()
 			for measurementN in resultSummary[tp]:
 				# Subset data - only relevant (tp, meas)
 				this.prepDataByMeasTp(tp, measurementN)
 				results[tp][measurementN] = []
-				print "        Processing measurement N = " + str(measurementN)
+				sjlog.info("Processing measurement N = " + str(measurementN))
 				imp = measHandler.readSingleMeasurement(tp,measurementN)
 				roiDict = measHandler.roiSorted()
 				for planeN in roiDict:
-					print "                Processing Z Plane = " + str(planeN)
+					sjlog.info("Processing Z Plane = " + str(planeN))
 					for idx in xrange(len(roiDict[planeN])):
 						# Can have multiple ROIs per plane
 						polygon = roiDict[planeN][idx].getInterpolatedPolygon()
