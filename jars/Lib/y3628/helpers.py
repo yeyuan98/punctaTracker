@@ -8,7 +8,7 @@ from ij import WindowManager
 from ij.plugin.frame import RoiManager
 from ij.io import FileSaver
 #		Python 2.x
-import os, json
+import os, json, math
 if os.name == 'nt':
 	import win32api, win32con
 
@@ -100,4 +100,9 @@ class roiSaver:
 
 # L2-dist
 def pointDist(p1,p2):
-		return ((p1[0]-p2[0])**2+(p1[1]-p2[1])**2)**0.5
+	return ((p1[0]-p2[0])**2+(p1[1]-p2[1])**2)**0.5
+
+# Quantile (q in percentage)
+def quantile(list_num, q):
+	list_num = sorted(list_num)
+	return list_num[int(max(math.floor(len(list_num)*q/100)-1,0))]

@@ -13,17 +13,21 @@ information to the Console/Log dialog of ImageJ2.
 
 # Example usage
 
+Initiaization must be run once explicitly in your main routine with sjlogging.init(). 
+Afterwards, you can instantiate SJLogger each with optional source names in 
+your package components. This design is made due to Jython parameter annotation limitations.
+
 ```python
 
+# Initialize SJLogger - must be run once in main routine
 import y3628.sjlogging as sjlog
-
-# Initialize SJLogger
 #@ LogService sjlogservice
 sjlog.init(sjlogservice)
 
-log_main = SJLogger("main")
-log_sub = SJLogger("main:sub")
-log2 = SJLogger("secondary")
+# Instantiate SJLoggers - available in all package components
+log_main = sjlog.SJLogger("main")
+log_sub = sjlog.SJLogger("main:sub")
+log2 = sjlog.SJLogger("secondary")
 
 # Logging in different ways for level 'ERROR'
 log_main.log(1, record)

@@ -6,7 +6,7 @@
 #       y3628
 import sjlogging
 from analysisHandlers import *
-from helpers import pointDist
+from helpers import pointDist, quantile
 #		ImageJ
 from ij.measure import Measurements
 #		ImageJ Plugins
@@ -67,7 +67,6 @@ class roiIntAnalysis:
 class nucleusAnalysis:
 	
 	def __init__(this,resultPath):
-		global sjlog
 		headers = ["Distance", "Equivalent Diameter"]
 		rm = RoiManager.getRoiManager()
 		rm.reset()
@@ -206,6 +205,7 @@ class spotInRoiAnalysis:
 					# Pop >1 elements need to remove by reverse index order
 					del row[idx]
 				this.metaMap[(tp, meas)] = tuple(row)
+		sjlog.info("Metadata mapping = "+str(this.metaMap))
 	
 	
 	def computeColumnIndices(this):
@@ -227,11 +227,12 @@ class spotInRoiAnalysis:
 			this.data[entry].append(row[this.indices[entry]])
 	def convertDataTypes(this):
 		# Convert into suitable types
-		# 	tp, meas, spotIdx: string
-		#	x, y, z: float
+		# 	tp, meas: string
+		#	x, y, z, score: float
 		this.data["x"] = [float(t) for t in this.data["x"]]
 		this.data["y"] = [float(t) for t in this.data["y"]]
 		this.data["z"] = [float(t) for t in this.data["z"]]
+		this.data["score"] = [float(t) for t in this.data["score"]]
 	
 	# Data computation
 
@@ -249,6 +250,7 @@ class spotInRoiAnalysis:
 		
 		#	Which meta combination is the given (tp, meas)
 		metaValues = this.metaMap[(tp, meas)]
+		sjlog.info("Metadata for this measurement = "+str(metaValues))
 		#	Subset data to get those fully match the meta
 		#		Start with meta_0
 		meta_0 = this.data["meta_0"]
@@ -259,19 +261,25 @@ class spotInRoiAnalysis:
 			meta_j = this.data["meta_"+str(j)]
 			currMeta = metaValues[j]
 			indices = [idx for idx in indices if meta_j[idx] == currMeta]
+		sjlog.info("Number of spots for this measurement = "+str(len(indices)))
 		this.prepedData = this.getDataSubset(indices, this.data)
 
 	def getDataByProximalZ(this, z):
 		dist_z = [abs(t - z) for t in this.prepedData["z"]]
+		score = this.prepedData["score"]
 		z_max = this.params["z_slice_max"]
-		proximal_indices = [idx for idx in xrange(len(dist_z)) if dist_z[idx] <= z_max]
+		score_min = quantile(score, this.params["min_score"])
+		proximal_indices = [idx for idx in xrange(len(dist_z)) if dist_z[idx] <= z_max and score[idx] >= score_min]
+		sjlog.info("Number of spots in Z proximity & sufficient score = "+str(len(proximal_indices)))
+		sjlog.info("Minimum score is "+str(score_min))
 		return this.getDataSubset(proximal_indices, this.prepedData)
 	
 	def __init__(this,resultPath,spotCsvPath,metaCsvPath,params):
 
 		this.params = params
-		this.dataEntries = ["x", "y", "z"]
+		this.dataEntries = ["x", "y", "z", "score"]
 
+		sjlog.info("Running spotInRoiAnalysis")
 		# Adding data entries for metadata columns
 		this.addMetaDataEntries(metaCsvPath)
 		
@@ -288,6 +296,7 @@ class spotInRoiAnalysis:
 				this.addDataRow(row)
 			# Convert data into suitable types
 			this.convertDataTypes()
+		sjlog.info("Total number of spots after init = "+str(len(this.data["x"])))
 
 		headers = ["Plane#", "Equivalent Diameter", "Spot Count"]
 		rm = RoiManager.getRoiManager()
@@ -296,34 +305,49 @@ class spotInRoiAnalysis:
 		resultSummary = measHandler.measurementDataSummary(resultPath)
 		results = OrderedDict()
 		dR = displayResult(headers)
-		sjlog.info("Running spotInRoiAnalysis")
 		for tp in resultSummary:
 			sjlog.info("Processing time point = " + tp)
 			results[tp] = OrderedDict()
 			for measurementN in resultSummary[tp]:
 				# Subset data - only relevant (tp, meas)
+				sjlog.info("Processing measurement N = " + str(measurementN))
 				this.prepDataByMeasTp(tp, measurementN)
 				results[tp][measurementN] = []
-				sjlog.info("Processing measurement N = " + str(measurementN))
 				imp = measHandler.readSingleMeasurement(tp,measurementN)
 				roiDict = measHandler.roiSorted()
 				for planeN in roiDict:
 					sjlog.info("Processing Z Plane = " + str(planeN))
+					# Subset spot data - only proximal Z
+					#	Also filters by score
+					spot_data = this.getDataByProximalZ(float(planeN))
+					spot_num = len(spot_data["z"])
 					for idx in xrange(len(roiDict[planeN])):
 						# Can have multiple ROIs per plane
 						polygon = roiDict[planeN][idx].getInterpolatedPolygon()
+						px = polygon.xpoints
+						py = polygon.ypoints
 						imp.setSlice(int(planeN))
 						imp.setRoi(roiDict[planeN][idx], False)
 						# Get equi. diameter
 						stat = imp.getStatistics(Measurements.AREA)
 						area = stat.area
 						equiD = (4*area/3.141593)**0.5
-						# Subset spot data - only proximal Z
-						spot_data = this.getDataByProximalZ(float(planeN))
-						spot_num = len(spot_data["z"])
 						# Contains by (x, y)
 						spot_contains = [polygon.contains(spot_data["x"][i], spot_data["y"][i]) for i in xrange(spot_num)]
+						sjlog.info("Number of fully contained spots in ROI = "+str(sum(spot_contains)))
+						# Which are "close enough" according to XY maximum distance param
+						maxXYdistPixels = this.params["xy_max"]
+						for j in xrange(len(spot_contains)):
+							# Only do computation for spots not contained
+							if not spot_contains[j]:
+								dists = [pointDist((spot_data["x"][j], spot_data["y"][j]), (px[k],py[k])) for k in xrange(len(px))]
+								if min(dists) <= maxXYdistPixels:
+									spot_contains[j] = True
 						spot_num_contains = sum(spot_contains)
+						sjlog.info("Number of contained spots (w/ XY padding) in ROI = "+str(spot_num_contains))
+						sjlog.info(
+							"Position of all contained spots = "+
+							str([(spot_data["x"][idx], spot_data["y"][idx]) for idx in xrange(len(spot_contains)) if spot_contains[idx]]))
 						# Append results
 						results[tp][measurementN].append([planeN, equiD, spot_num_contains])
 					

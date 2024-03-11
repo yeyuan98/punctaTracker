@@ -30,15 +30,20 @@ def spotInRoiDialog():
     # Settings dialog
     d = GenericDialog("Spot within ROI Settings")
     d.addStringField("Maximum Z-slice distance (allow decimal)","1")
+    d.addStringField("Maximum XY pixel distance (allow decimal)","5")
+    d.addStringField("Minimum score quantile (percent)","25")
     #   Column mapping
     #       which columns are x, y, z?
-    cols = ["x", "y", "z"]
+    #       minimum score for the spot to be considered?
+    cols = ["x", "y", "z", "score"]
     d.addMessage("Mapping definition:\n")
     for c in cols:
         d.addChoice(c, headers, headers[0])
     d.showDialog()
     #       Fetch setting results
     zsm = float(d.getNextString())
+    xym = float(d.getNextString())
+    min_score = float(d.getNextString())
     cs = d.getChoices()
     cs = [c.getSelectedItem() for c in cs]
 
@@ -51,4 +56,4 @@ def spotInRoiDialog():
     d = OpenDialog("Choose the metadata csv file...")
     meta_path = d.getPath()
 
-    return (spot_path, meta_path, {"z_slice_max": zsm, "x": cs[0], "y": cs[1], "z": cs[2]})
+    return (spot_path, meta_path, {"z_slice_max": zsm, "xy_max": xym, "min_score": min_score, "x": cs[0], "y": cs[1], "z": cs[2], "score": cs[3]})
