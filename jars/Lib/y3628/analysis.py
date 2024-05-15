@@ -348,6 +348,9 @@ class spotInRoiAnalysis:
 						sjlog.info(
 							"Position of all contained spots = "+
 							str([(spot_data["x"][idx], spot_data["y"][idx]) for idx in xrange(len(spot_contains)) if spot_contains[idx]]))
+						sjlog.info(
+							"ROI interpolated polygon coords = "+
+							str([(px[k],py[k]) for k in xrange(len(px))]))
 						# Append results
 						results[tp][measurementN].append([planeN, equiD, spot_num_contains])
 					
