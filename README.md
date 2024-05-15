@@ -13,7 +13,7 @@ GPLv3.
 
 ## Installation
 
-This plugin is available on an unlisted ImageJ2 update site. Following these [steps](https://imagej.net/update-sites/following) to get the plugin. You need to install *all* files in the site for the plugin to work properly. You can find the plugin under Plugins/punctaTracker.
+This plugin is available on an unlisted ImageJ2 update site. Following these [steps](https://imagej.net/update-sites/following) to get the plugin. You need to install *all* files in the site for the plugin to work properly. You can find the plugin under Puncta Tracker in the Plugins menu.
 
 ImageJ update site: https://sites.imagej.net/Yuanye1998/
 
