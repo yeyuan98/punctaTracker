@@ -298,7 +298,7 @@ class spotInRoiAnalysis:
 			this.convertDataTypes()
 		sjlog.info("Total number of spots after init = "+str(len(this.data["x"])))
 
-		headers = ["Plane#", "Equivalent Diameter", "Spot Count"]
+		headers = ["Plane#", "Equivalent Diameter", "Spot Count", "SpotIn Coords", "SpotIn Dists", "SpotOut Coords", "SpotOut Dists"]
 		rm = RoiManager.getRoiManager()
 		rm.reset()
 		measHandler = measurementHandler(resultPath)
@@ -345,14 +345,21 @@ class spotInRoiAnalysis:
 									spot_contains[j] = True
 						spot_num_contains = sum(spot_contains)
 						sjlog.info("Number of contained spots (w/ XY padding) in ROI = "+str(spot_num_contains))
-						sjlog.info(
-							"Position of all contained spots = "+
-							str([(spot_data["x"][idx], spot_data["y"][idx]) for idx in xrange(len(spot_contains)) if spot_contains[idx]]))
-						sjlog.info(
-							"ROI interpolated polygon coords = "+
-							str([(px[k],py[k]) for k in xrange(len(px))]))
+						# Get coords and dists of spots in and out of ROI
+						spot_coord = [(spot_data["x"][idx], spot_data["y"][idx]) for idx in xrange(len(spot_contains))]
+						spotIn_coord = [spot_coord[idx] for idx in xrange(len(spot_contains)) if spot_contains[idx]]
+						spotOut_coord = [spot_coord[idx] for idx in xrange(len(spot_contains)) if not spot_contains[idx]]
+						spot_dist = [[pointDist(spot_coord[idx], (px[k],py[k])) for k in xrange(len(px))] for idx in xrange(len(spot_contains))]
+						spot_dist = [min(spot_dist[idx]) for idx in xrange(len(spot_contains))]
+						spotIn_dist = [spot_dist[idx] for idx in xrange(len(spot_contains)) if spot_contains[idx]]
+						spotOut_dist = [spot_dist[idx] for idx in xrange(len(spot_contains)) if not spot_contains[idx]]
+						# Convert to a single string
+						spotIn_coord = str(spotIn_coord)
+						spotOut_coord = str(spotOut_coord)
+						spotIn_dist = str(spotIn_dist)
+						spotOut_dist = str(spotOut_dist)
 						# Append results
-						results[tp][measurementN].append([planeN, equiD, spot_num_contains])
+						results[tp][measurementN].append([planeN, equiD, spot_num_contains, spotIn_coord, spotIn_dist, spotOut_coord, spotOut_dist])
 					
 				dR.saveResult(headers,results[tp][measurementN],tp,measurementN)
 		#print results

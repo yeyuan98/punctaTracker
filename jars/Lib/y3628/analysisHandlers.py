@@ -111,6 +111,6 @@ class displayResult:
             this.table.addValue(this.column_headers[0],time_point)
             this.table.addValue(this.column_headers[1], int(measurementN))
             for j in xrange(len(final_results[i])):
-                this.table.addValue(this.column_headers[j+2],float(final_results[i][j]))
+                this.table.addValue(this.column_headers[j+2],str(final_results[i][j]))
     def showResult(this):
         this.table.show("Results")
