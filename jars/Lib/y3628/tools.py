@@ -5,6 +5,8 @@
 #       y3628
 import sjlogging
 from helpers import fileHandler
+#       base
+import os
 #		Bio-Formats
 from loci.plugins import BF
 from loci.plugins.in import ImporterOptions
@@ -58,6 +60,7 @@ class ChannelExtract_listen(ActionListener):
 			channelimp = ChannelSplitter().split(imp)
 			channelimp = channelimp[chSet - 1]
 			channelimp.setTitle(this.extractTitle)
+			fn = os.path.splitext(fn)[0] + ".tif"
 			save_path = os.path.join(dc_o.getDirectory(),fn)
 			fsr = FileSaver(channelimp)
 			fsr.saveAsTiff(save_path)
